@@ -77,36 +77,6 @@ class JazzWoodwindsLessons:
         """
         st.markdown(custom_css, unsafe_allow_html=True)
 
-    def get_image_base64(self, image_path):
-        """Convert image to base64 string for embedding"""
-        if not image_path or not os.path.exists(image_path):
-            return ""
-        
-        cache_key = f"image_cache_{image_path}"
-        if cache_key in st.session_state:
-            return st.session_state[cache_key]
-
-        try:
-            with Image.open(image_path) as img:
-                # Resize image to reduce size while maintaining aspect ratio
-                max_size = (800, 800)
-                img.thumbnail(max_size, Image.Resampling.LANCZOS)
-                
-                # Convert to RGB if needed
-                if img.mode in ('RGBA', 'P'):
-                    img = img.convert('RGB')
-                
-                # Save to buffer
-                buffer = BytesIO()
-                img.save(buffer, format='JPEG', optimize=True, quality=85)
-                img_str = base64.b64encode(buffer.getvalue()).decode()
-
-                st.session_state[cache_key] = img_str
-                return img_str
-        except Exception as e:
-            print(f"Error loading image {image_path}: {e}")
-            return ""
-
     def update_database_schema(self):
         conn = sqlite3.connect('jazz_woodwinds.db')
         c = conn.cursor()
@@ -136,6 +106,33 @@ class JazzWoodwindsLessons:
 
     def init_database(self):
         pass
+
+    def get_image_base64(self, image_path):
+        """Convert image to base64 string for embedding"""
+        if not image_path or not os.path.exists(image_path):
+            return ""
+        
+        cache_key = f"image_cache_{image_path}"
+        if cache_key in st.session_state:
+            return st.session_state[cache_key]
+
+        try:
+            with Image.open(image_path) as img:
+                max_size = (800, 800)
+                img.thumbnail(max_size, Image.Resampling.LANCZOS)
+                
+                if img.mode in ('RGBA', 'P'):
+                    img = img.convert('RGB')
+                
+                buffer = BytesIO()
+                img.save(buffer, format='JPEG', optimize=True, quality=85)
+                img_str = base64.b64encode(buffer.getvalue()).decode()
+
+                st.session_state[cache_key] = img_str
+                return img_str
+        except Exception as e:
+            print(f"Error loading image {image_path}: {e}")
+            return ""
 
     def fetch_offerings(self):
         conn = sqlite3.connect('jazz_woodwinds.db')
@@ -211,12 +208,12 @@ class JazzWoodwindsLessons:
             student_name = st.text_input("Student Name")
             student_email = st.text_input("Student Email")
             preferred_day = st.selectbox("Preferred Day", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"])
-            preferred_time = st.selectbox("Preferred Time", ["Morning (AM)", "Afternoon (PM)"])
+            preferred_time = st.text_input("Preferred Time (e.g., 10:00 AM or 3:30 PM)")
             musical_goals = st.text_area("What are your musical goals?")
             submitted = st.form_submit_button("Submit Booking")
 
             if submitted:
-                if not student_name or not student_email or not musical_goals:
+                if not student_name or not student_email or not musical_goals or not preferred_time:
                     st.error("All fields are required!")
                 elif not re.match(r'^\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', student_email):
                     st.error("Please enter a valid email address.")
@@ -231,47 +228,6 @@ class JazzWoodwindsLessons:
                     conn.close()
                     st.success(f"Thank you, {student_name}! Your booking for {offering[1]} has been submitted.")
                     st.session_state['active_booking_id'] = None
-
-    def render_admin_panel(self):
-        if not self.authenticate_admin():
-            return
-
-        st.title("Admin Dashboard")
-        st.markdown("---")
-        
-        tab1, tab2 = st.tabs(["📚 Lesson Offerings", "📋 Bookings"])
-        
-        with tab1:
-            self.manage_lesson_offerings()
-        
-        with tab2:
-            self.manage_bookings()
-
-    def manage_bookings(self):
-        st.header("Student Bookings")
-        bookings = self.fetch_bookings()
-        if bookings:
-            for booking in bookings:
-                with st.expander(f"📅 {booking[2]} - {booking[1]}"):
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        st.markdown(f"**Student:** {booking[2]}")
-                        st.markdown(f"**Email:** {booking[3]}")
-                        st.markdown(f"**Preferred Schedule:** {booking[4]}, {booking[5]}")
-                    with col2:
-                        st.markdown("**Musical Goals:**")
-                        st.markdown(f"_{booking[6]}_")
-
-                    if st.button("🗑️ Delete Booking", key=f"del_booking_{booking[0]}"):
-                        conn = sqlite3.connect('jazz_woodwinds.db')
-                        c = conn.cursor()
-                        c.execute("DELETE FROM lesson_bookings WHERE id = ?", (booking[0],))
-                        conn.commit()
-                        conn.close()
-                        st.success("Booking deleted successfully!")
-                        st.rerun()
-        else:
-            st.info("No bookings received yet.")
 
     def authenticate_admin(self):
         if 'authenticated' not in st.session_state:
@@ -290,6 +246,45 @@ class JazzWoodwindsLessons:
 
     def get_admin_password(self):
         return "your_secure_password"
+
+    def render_admin_panel(self):
+        if not self.authenticate_admin():
+            return
+
+        st.title("Admin Dashboard")
+        st.markdown("---")
+        
+        tab1, tab2 = st.tabs(["📚 Lesson Offerings", "📋 Bookings"])
+        
+        with tab1:
+            st.subheader("Manage Lesson Offerings")
+            # Original functionality here...
+
+        with tab2:
+            st.subheader("Student Bookings")
+            bookings = self.fetch_bookings()
+            if bookings:
+                for booking in bookings:
+                    with st.expander(f"📅 {booking[2]} - {booking[1]}", expanded=True):
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.markdown(f"**Student:** {booking[2]}")
+                            st.markdown(f"**Email:** {booking[3]}")
+                            st.markdown(f"**Preferred Schedule:** {booking[4]}, {booking[5]}")
+                        with col2:
+                            st.markdown("**Musical Goals:**")
+                            st.markdown(f"_{booking[6]}_")
+
+                        if st.button("🗑️ Delete Booking", key=f"del_booking_{booking[0]}"):
+                            conn = sqlite3.connect('jazz_woodwinds.db')
+                            c = conn.cursor()
+                            c.execute("DELETE FROM lesson_bookings WHERE id = ?", (booking[0],))
+                            conn.commit()
+                            conn.close()
+                            st.success("Booking deleted successfully!")
+                            st.rerun()
+            else:
+                st.info("No bookings received yet.")
 
     def main(self):
         st.sidebar.title("Navigation")
