@@ -209,25 +209,25 @@ class JazzWoodwindsLessons:
         if st.button("Book This Lesson", key=f"book_{offering[0]}"):
             st.session_state['active_booking_id'] = offering[0]
 
-    def render_booking_form(self, offering):
-        st.markdown(f"### Book Lesson: {offering[1]}")
-        with st.form(key=f"booking_form_{offering[0]}", clear_on_submit=True):
-            student_name = st.text_input("Student Name")
-            student_email = st.text_input("Student Email")
-            preferred_date = st.date_input("Preferred Date")
-            musical_goals = st.text_area("What are your musical goals?")
-            submitted = st.form_submit_button("Submit Booking")
+def render_booking_form(self, offering):
+    st.markdown(f"### Book Lesson: {offering[1]}")
+    with st.form(key=f"booking_form_{offering[0]}", clear_on_submit=True):
+        student_name = st.text_input("Student Name")
+        student_email = st.text_input("Student Email")
+        preferred_day = st.text_input("Preferred Day (e.g., Monday, Tuesday, etc.)")
+        preferred_time = st.text_input("Preferred Time (e.g., 10:00 AM, 3:30 PM, etc.)")
+        musical_goals = st.text_area("What are your musical goals?")
+        submitted = st.form_submit_button("Submit Booking")
 
-            if submitted:
-                if not student_name or not student_email or not musical_goals:
-                    st.error("All fields are required!")
-                elif not re.match(r'^\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', student_email):
-                    st.error("Please enter a valid email address.")
-                elif preferred_date < date.today():
-                    st.error("Preferred date cannot be in the past.")
-                else:
-                    st.success(f"Thank you, {student_name}! Your booking for {offering[1]} has been submitted.")
-                    st.session_state['active_booking_id'] = None
+        if submitted:
+            if not student_name or not student_email or not musical_goals or not preferred_day or not preferred_time:
+                st.error("All fields are required!")
+            elif not re.match(r'^\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', student_email):
+                st.error("Please enter a valid email address.")
+            else:
+                st.success(f"Thank you, {student_name}! Your booking for {offering[1]} has been submitted.")
+                st.session_state['active_booking_id'] = None
+
 
     def authenticate_admin(self):
         if 'authenticated' not in st.session_state:
