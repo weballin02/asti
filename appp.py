@@ -240,8 +240,22 @@ class JazzWoodwindsLessons:
                 elif not re.match(r'^\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', student_email):
                     st.error("Please enter a valid email address.")
                 else:
-                    st.success(f"Thank you, {student_name}! Your booking for {offering[1]} has been submitted.")
-                    st.session_state['active_booking_id'] = None
+                    try:
+                        # Save the booking to the database
+                        conn = sqlite3.connect('jazz_woodwinds.db')
+                        c = conn.cursor()
+                        c.execute("""
+                            INSERT INTO lesson_bookings 
+                            (lesson_id, student_name, student_email, preferred_day, preferred_time, musical_goals)
+                            VALUES (?, ?, ?, ?, ?, ?)
+                        """, (offering[0], student_name, student_email, preferred_day, preferred_time, musical_goals))
+                        conn.commit()
+                        conn.close()
+                        
+                        st.success(f"Thank you, {student_name}! Your booking for {offering[1]} has been submitted.")
+                        st.session_state['active_booking_id'] = None
+                    except Exception as e:
+                        st.error(f"Error saving booking: {str(e)}")
 
     def authenticate_admin(self):
         if 'authenticated' not in st.session_state:
