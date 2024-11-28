@@ -1,0 +1,97 @@
+/* static/css/styles.css */
+
+/* Base Styles */
+body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background-color: #ffffff;
+    color: #333333;
+    line-height: 1.6;
+    padding-top: 70px; /* To prevent content from hiding behind the navbar */
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+    color: #222222;
+    margin-bottom: 1rem;
+}
+
+/* Links */
+a {
+    color: #007BFF;
+    text-decoration: none;
+}
+
+a:hover {
+    color: #0056b3;
+    text-decoration: underline;
+}
+
+/* Buttons */
+.btn-primary {
+    background-color: #007BFF;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    font-size: 1.1rem;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    font-size: 1.1rem;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+/* Forms */
+.form-control {
+    font-size: 1.1rem;
+    padding: 0.75rem;
+    border-radius: 5px;
+}
+
+.form-label {
+    font-weight: 600;
+}
+
+/* Cards */
+.card {
+    border: none;
+    border-radius: 10px;
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: scale(1.02);
+}
+
+.card-title a {
+    font-size: 1.25rem;
+    color: #333333;
+}
+
+.card-title a:hover {
+    color: #007BFF;
+}
+
+/* Alerts */
+.alert {
+    font-size: 1.1rem;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .navbar-brand {
+        font-size: 1.5rem;
+    }
+    
+    h1 {
+        font-size: 2rem;
+    }
+}
