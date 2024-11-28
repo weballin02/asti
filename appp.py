@@ -248,9 +248,7 @@ class JazzWoodwindsLessons:
             <div class="offering-description">{offering[2]}</div>
             <div class="offering-price">{offering[3]}</div>
             <div class="book-button">
-                <button onclick="window.location.href='#booking'" style="padding: 10px 20px; background-color: #007AFF; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                    Book This Lesson
-                </button>
+                <!-- Original button preserved without additional JavaScript button -->
             </div>
         </div>
         """
@@ -342,7 +340,7 @@ class JazzWoodwindsLessons:
                             st.experimental_rerun()
             else:
                 st.info("No bookings received yet.")
-    
+
     def main(self):
         st.sidebar.title("Navigation")
         page = st.sidebar.radio("Go to", ["Home", "Admin Panel"])
