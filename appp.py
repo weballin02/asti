@@ -80,27 +80,67 @@ class JazzWoodwindsLessons:
     def update_database_schema(self):
         conn = sqlite3.connect('jazz_woodwinds.db')
         c = conn.cursor()
+        
+        # Create table if it doesn't exist with minimal columns
         c.execute("""
         CREATE TABLE IF NOT EXISTS lesson_bookings (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             lesson_id INTEGER NOT NULL,
             student_name TEXT NOT NULL,
             student_email TEXT NOT NULL,
-            preferred_day TEXT NOT NULL,
-            preferred_time TEXT NOT NULL,
             musical_goals TEXT NOT NULL,
             FOREIGN KEY (lesson_id) REFERENCES lesson_offerings (id)
         )
         """)
-        c.execute("""
-        CREATE TABLE IF NOT EXISTS lesson_offerings (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            description TEXT NOT NULL,
-            price TEXT NOT NULL,
-            image_path TEXT
-        )
-        """)
+        
+        # Retrieve existing columns
+        c.execute("PRAGMA table_info(lesson_bookings)")
+        existing_columns = [info[1] for info in c.fetchall()]
+        
+        # Rename 'preferred_date' to 'preferred_day' if it exists
+        if 'preferred_date' in existing_columns and 'preferred_day' not in existing_columns:
+            try:
+                # SQLite doesn't support renaming columns directly before version 3.25.0
+                # So, we need to perform a table rebuild
+                c.execute("ALTER TABLE lesson_bookings RENAME TO lesson_bookings_old")
+                c.execute("""
+                CREATE TABLE lesson_bookings (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    lesson_id INTEGER NOT NULL,
+                    student_name TEXT NOT NULL,
+                    student_email TEXT NOT NULL,
+                    preferred_day TEXT NOT NULL,
+                    preferred_time TEXT NOT NULL,
+                    musical_goals TEXT NOT NULL,
+                    FOREIGN KEY (lesson_id) REFERENCES lesson_offerings (id)
+                )
+                """)
+                # Copy data from old table to new table, mapping preferred_date to preferred_day and setting a default preferred_time
+                c.execute("""
+                INSERT INTO lesson_bookings (id, lesson_id, student_name, student_email, preferred_day, preferred_time, musical_goals)
+                SELECT id, lesson_id, student_name, student_email, preferred_date, '10:00 AM', musical_goals FROM lesson_bookings_old
+                """)
+                c.execute("DROP TABLE lesson_bookings_old")
+                print("Renamed 'preferred_date' to 'preferred_day' and added 'preferred_time' with default values.")
+            except Exception as e:
+                print(f"Error renaming column: {e}")
+        
+        # Add 'preferred_day' column if it doesn't exist
+        if 'preferred_day' not in existing_columns:
+            try:
+                c.execute("ALTER TABLE lesson_bookings ADD COLUMN preferred_day TEXT NOT NULL DEFAULT 'Monday'")
+                print("Added 'preferred_day' column.")
+            except Exception as e:
+                print(f"Error adding 'preferred_day' column: {e}")
+        
+        # Add 'preferred_time' column if it doesn't exist
+        if 'preferred_time' not in existing_columns:
+            try:
+                c.execute("ALTER TABLE lesson_bookings ADD COLUMN preferred_time TEXT NOT NULL DEFAULT '10:00 AM'")
+                print("Added 'preferred_time' column.")
+            except Exception as e:
+                print(f"Error adding 'preferred_time' column: {e}")
+        
         conn.commit()
         conn.close()
 
@@ -149,7 +189,18 @@ class JazzWoodwindsLessons:
         SELECT b.id, o.name AS lesson_name, b.student_name, b.student_email, b.preferred_day, b.preferred_time, b.musical_goals
         FROM lesson_bookings b
         JOIN lesson_offerings o ON b.lesson_id = o.id
-        ORDER BY b.preferred_day ASC, b.preferred_time ASC
+        ORDER BY 
+            CASE 
+                WHEN b.preferred_day = 'Monday' THEN 1
+                WHEN b.preferred_day = 'Tuesday' THEN 2
+                WHEN b.preferred_day = 'Wednesday' THEN 3
+                WHEN b.preferred_day = 'Thursday' THEN 4
+                WHEN b.preferred_day = 'Friday' THEN 5
+                WHEN b.preferred_day = 'Saturday' THEN 6
+                WHEN b.preferred_day = 'Sunday' THEN 7
+                ELSE 8
+            END,
+            b.preferred_time ASC
         ''')
         bookings = c.fetchall()
         conn.close()
@@ -220,7 +271,7 @@ class JazzWoodwindsLessons:
         if submitted:
             if not student_name or not student_email or not musical_goals or not preferred_time:
                 st.error("All fields are required!")
-            elif not re.match(r'^\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', student_email):
+            elif not re.match(r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$', student_email):
                 st.error("Please enter a valid email address.")
             else:
                 conn = sqlite3.connect('jazz_woodwinds.db')
@@ -265,7 +316,7 @@ class JazzWoodwindsLessons:
             st.subheader("Manage Lesson Offerings")
             # Original functionality here...
             st.write("Lesson offerings management interface goes here.")
-
+        
         with tab2:
             st.subheader("Student Bookings")
             bookings = self.fetch_bookings()
@@ -291,7 +342,7 @@ class JazzWoodwindsLessons:
                             st.experimental_rerun()
             else:
                 st.info("No bookings received yet.")
-
+    
     def main(self):
         st.sidebar.title("Navigation")
         page = st.sidebar.radio("Go to", ["Home", "Admin Panel"])
