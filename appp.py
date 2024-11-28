@@ -289,7 +289,7 @@ class JazzWoodwindsLessons:
         return st.session_state['authenticated']
 
     def get_admin_password(self):
-        return "your_secure_password"
+        return "onionburger36"
 
     def render_admin_panel(self):
         """Render the admin panel interface"""
