@@ -77,6 +77,36 @@ class JazzWoodwindsLessons:
         """
         st.markdown(custom_css, unsafe_allow_html=True)
 
+    def get_image_base64(self, image_path):
+        """Convert image to base64 string for embedding"""
+        if not image_path or not os.path.exists(image_path):
+            return ""
+        
+        cache_key = f"image_cache_{image_path}"
+        if cache_key in st.session_state:
+            return st.session_state[cache_key]
+
+        try:
+            with Image.open(image_path) as img:
+                # Resize image to reduce size while maintaining aspect ratio
+                max_size = (800, 800)
+                img.thumbnail(max_size, Image.Resampling.LANCZOS)
+                
+                # Convert to RGB if needed
+                if img.mode in ('RGBA', 'P'):
+                    img = img.convert('RGB')
+                
+                # Save to buffer
+                buffer = BytesIO()
+                img.save(buffer, format='JPEG', optimize=True, quality=85)
+                img_str = base64.b64encode(buffer.getvalue()).decode()
+
+                st.session_state[cache_key] = img_str
+                return img_str
+        except Exception as e:
+            print(f"Error loading image {image_path}: {e}")
+            return ""
+
     def update_database_schema(self):
         conn = sqlite3.connect('jazz_woodwinds.db')
         c = conn.cursor()
@@ -159,7 +189,9 @@ class JazzWoodwindsLessons:
     def render_offering_card(self, offering):
         image_html = ""
         if offering[4]:  # If there's an image path
-            image_html = f'<img src="data:image/jpeg;base64,{self.get_image_base64(offering[4])}" class="offering-image" alt="{offering[1]}">'
+            base64_img = self.get_image_base64(offering[4])
+            if base64_img:
+                image_html = f'<img src="data:image/jpeg;base64,{base64_img}" class="offering-image" alt="{offering[1]}">'
         
         card_html = f"""
         <div class="offering-card">
