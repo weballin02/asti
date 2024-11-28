@@ -241,6 +241,10 @@ class JazzWoodwindsLessons:
                     st.success(f"Thank you, {student_name}! Your booking for {offering[1]} has been submitted.")
                     st.session_state['active_booking_id'] = None
 
+    def render_admin_panel(self):
+        st.sidebar.header("Admin Login")
+        st.write("Admin features would go here.")
+
     def main(self):
         st.sidebar.title("Navigation")
         page = st.sidebar.radio("Go to", ["Home", "Admin Panel"])
