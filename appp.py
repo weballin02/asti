@@ -81,7 +81,18 @@ class JazzWoodwindsLessons:
         conn = sqlite3.connect('jazz_woodwinds.db')
         c = conn.cursor()
         
-        # Create table if it doesn't exist with minimal columns
+        # Create lesson_offerings table if it doesn't exist
+        c.execute("""
+        CREATE TABLE IF NOT EXISTS lesson_offerings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            description TEXT NOT NULL,
+            price TEXT NOT NULL,
+            image_path TEXT
+        )
+        """)
+        
+        # Create lesson_bookings table if it doesn't exist with minimal columns
         c.execute("""
         CREATE TABLE IF NOT EXISTS lesson_bookings (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -97,11 +108,11 @@ class JazzWoodwindsLessons:
         c.execute("PRAGMA table_info(lesson_bookings)")
         existing_columns = [info[1] for info in c.fetchall()]
         
-        # Rename 'preferred_date' to 'preferred_day' if it exists
+        # Rename 'preferred_date' to 'preferred_day' if it exists and 'preferred_day' does not
         if 'preferred_date' in existing_columns and 'preferred_day' not in existing_columns:
             try:
                 # SQLite doesn't support renaming columns directly before version 3.25.0
-                # So, we need to perform a table rebuild
+                # So, perform a table rebuild
                 c.execute("ALTER TABLE lesson_bookings RENAME TO lesson_bookings_old")
                 c.execute("""
                 CREATE TABLE lesson_bookings (
@@ -248,7 +259,7 @@ class JazzWoodwindsLessons:
             <div class="offering-description">{offering[2]}</div>
             <div class="offering-price">{offering[3]}</div>
             <div class="book-button">
-                <!-- Original button preserved without additional JavaScript button -->
+                <!-- Placeholder for button styling if needed -->
             </div>
         </div>
         """
@@ -313,8 +324,79 @@ class JazzWoodwindsLessons:
         with tab1:
             st.subheader("Manage Lesson Offerings")
             # Original functionality here...
-            st.write("Lesson offerings management interface goes here.")
-        
+            # Example: Add, Edit, Delete lesson offerings
+            action = st.radio("Choose an action", ["Add Offering", "Edit Offering", "Delete Offering"])
+            
+            if action == "Add Offering":
+                with st.form("add_offering_form", clear_on_submit=True):
+                    name = st.text_input("Lesson Name")
+                    description = st.text_area("Description")
+                    price = st.text_input("Price")
+                    image_path = st.text_input("Image Path (optional)")
+                    submitted = st.form_submit_button("Add Offering")
+                    
+                    if submitted:
+                        if not name or not description or not price:
+                            st.error("Name, Description, and Price are required!")
+                        else:
+                            conn = sqlite3.connect('jazz_woodwinds.db')
+                            c = conn.cursor()
+                            c.execute("""
+                            INSERT INTO lesson_offerings (name, description, price, image_path)
+                            VALUES (?, ?, ?, ?)
+                            """, (name, description, price, image_path if image_path else None))
+                            conn.commit()
+                            conn.close()
+                            st.success("Lesson offering added successfully!")
+            
+            elif action == "Edit Offering":
+                offerings = self.fetch_offerings()
+                offering_names = [offering[1] for offering in offerings]
+                selected_offering = st.selectbox("Select Offering to Edit", offering_names)
+                if selected_offering:
+                    offering = next((off for off in offerings if off[1] == selected_offering), None)
+                    if offering:
+                        with st.form("edit_offering_form", clear_on_submit=True):
+                            name = st.text_input("Lesson Name", value=offering[1])
+                            description = st.text_area("Description", value=offering[2])
+                            price = st.text_input("Price", value=offering[3])
+                            image_path = st.text_input("Image Path (optional)", value=offering[4] if offering[4] else "")
+                            submitted = st.form_submit_button("Update Offering")
+                            
+                            if submitted:
+                                if not name or not description or not price:
+                                    st.error("Name, Description, and Price are required!")
+                                else:
+                                    conn = sqlite3.connect('jazz_woodwinds.db')
+                                    c = conn.cursor()
+                                    c.execute("""
+                                    UPDATE lesson_offerings
+                                    SET name = ?, description = ?, price = ?, image_path = ?
+                                    WHERE id = ?
+                                    """, (name, description, price, image_path if image_path else None, offering[0]))
+                                    conn.commit()
+                                    conn.close()
+                                    st.success("Lesson offering updated successfully!")
+            
+            elif action == "Delete Offering":
+                offerings = self.fetch_offerings()
+                offering_names = [offering[1] for offering in offerings]
+                selected_offering = st.selectbox("Select Offering to Delete", offering_names)
+                if selected_offering:
+                    offering = next((off for off in offerings if off[1] == selected_offering), None)
+                    if offering:
+                        if st.button("Delete Offering"):
+                            conn = sqlite3.connect('jazz_woodwinds.db')
+                            c = conn.cursor()
+                            # First, delete related bookings
+                            c.execute("DELETE FROM lesson_bookings WHERE lesson_id = ?", (offering[0],))
+                            # Then, delete the offering
+                            c.execute("DELETE FROM lesson_offerings WHERE id = ?", (offering[0],))
+                            conn.commit()
+                            conn.close()
+                            st.success("Lesson offering and related bookings deleted successfully!")
+                            st.experimental_rerun()
+
         with tab2:
             st.subheader("Student Bookings")
             bookings = self.fetch_bookings()
