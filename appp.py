@@ -87,7 +87,8 @@ class JazzWoodwindsLessons:
                 lesson_id INTEGER NOT NULL,
                 student_name TEXT NOT NULL,
                 student_email TEXT NOT NULL,
-                preferred_date TEXT NOT NULL,
+                preferred_day TEXT NOT NULL,
+                preferred_time TEXT NOT NULL,
                 musical_goals TEXT NOT NULL,
                 FOREIGN KEY (lesson_id) REFERENCES lesson_offerings (id)
             )
@@ -151,10 +152,10 @@ class JazzWoodwindsLessons:
         conn = sqlite3.connect('jazz_woodwinds.db')
         c = conn.cursor()
         c.execute('''
-            SELECT b.id, o.name AS lesson_name, b.student_name, b.student_email, b.preferred_date, b.musical_goals
+            SELECT b.id, o.name AS lesson_name, b.student_name, b.student_email, b.preferred_day, b.preferred_time, b.musical_goals
             FROM lesson_bookings b
             JOIN lesson_offerings o ON b.lesson_id = o.id
-            ORDER BY b.preferred_date ASC
+            ORDER BY b.preferred_day ASC
         ''')
         bookings = c.fetchall()
         conn.close()
@@ -209,25 +210,24 @@ class JazzWoodwindsLessons:
         if st.button("Book This Lesson", key=f"book_{offering[0]}"):
             st.session_state['active_booking_id'] = offering[0]
 
-def render_booking_form(self, offering):
-    st.markdown(f"### Book Lesson: {offering[1]}")
-    with st.form(key=f"booking_form_{offering[0]}", clear_on_submit=True):
-        student_name = st.text_input("Student Name")
-        student_email = st.text_input("Student Email")
-        preferred_day = st.text_input("Preferred Day (e.g., Monday, Tuesday, etc.)")
-        preferred_time = st.text_input("Preferred Time (e.g., 10:00 AM, 3:30 PM, etc.)")
-        musical_goals = st.text_area("What are your musical goals?")
-        submitted = st.form_submit_button("Submit Booking")
+    def render_booking_form(self, offering):
+        st.markdown(f"### Book Lesson: {offering[1]}")
+        with st.form(key=f"booking_form_{offering[0]}", clear_on_submit=True):
+            student_name = st.text_input("Student Name")
+            student_email = st.text_input("Student Email")
+            preferred_day = st.text_input("Preferred Day (e.g., Monday, Tuesday, etc.)")
+            preferred_time = st.text_input("Preferred Time (e.g., 10:00 AM, 3:30 PM, etc.)")
+            musical_goals = st.text_area("What are your musical goals?")
+            submitted = st.form_submit_button("Submit Booking")
 
-        if submitted:
-            if not student_name or not student_email or not musical_goals or not preferred_day or not preferred_time:
-                st.error("All fields are required!")
-            elif not re.match(r'^\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', student_email):
-                st.error("Please enter a valid email address.")
-            else:
-                st.success(f"Thank you, {student_name}! Your booking for {offering[1]} has been submitted.")
-                st.session_state['active_booking_id'] = None
-
+            if submitted:
+                if not student_name or not student_email or not preferred_day or not preferred_time or not musical_goals:
+                    st.error("All fields are required!")
+                elif not re.match(r'^\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', student_email):
+                    st.error("Please enter a valid email address.")
+                else:
+                    st.success(f"Thank you, {student_name}! Your booking for {offering[1]} has been submitted.")
+                    st.session_state['active_booking_id'] = None
 
     def authenticate_admin(self):
         if 'authenticated' not in st.session_state:
@@ -357,10 +357,11 @@ def render_booking_form(self, offering):
                         with col1:
                             st.markdown(f"**Student:** {booking[2]}")
                             st.markdown(f"**Email:** {booking[3]}")
-                            st.markdown(f"**Preferred Schedule:** {booking[4]}")
+                            st.markdown(f"**Preferred Day:** {booking[4]}")
+                            st.markdown(f"**Preferred Time:** {booking[5]}")
                         with col2:
                             st.markdown("**Musical Goals:**")
-                            st.markdown(f"_{booking[5]}_")
+                            st.markdown(f"_{booking[6]}_")
                         
                         if st.button("🗑️ Delete Booking", key=f"del_booking_{booking[0]}"):
                             if st.warning(f"Are you sure you want to delete this booking?"):
