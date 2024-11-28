@@ -1,0 +1,73 @@
+<!-- templates/upload.html -->
+{% extends "base.html" %}
+{% block content %}
+  <h2 class="text-center mb-4">Upload a New Video Lesson</h2>
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <form method="POST" enctype="multipart/form-data" id="uploadForm">
+          {{ form.hidden_tag() }}
+          <div class="mb-4">
+              {{ form.title.label(class="form-label h5") }}
+              {{ form.title(class="form-control", placeholder="Enter lesson title", autofocus=True) }}
+              {% for error in form.title.errors %}
+                  <div class="text-danger">{{ error }}</div>
+              {% endfor %}
+          </div>
+          <div class="mb-4">
+              {{ form.video.label(class="form-label h5") }}
+              {{ form.video(class="form-control") }}
+              {% for error in form.video.errors %}
+                  <div class="text-danger">{{ error }}</div>
+              {% endfor %}
+          </div>
+          <div class="mb-4">
+              {{ form.price.label(class="form-label h5") }}
+              {{ form.price(class="form-control", placeholder="Enter price in USD") }}
+              {% for error in form.price.errors %}
+                  <div class="text-danger">{{ error }}</div>
+              {% endfor %}
+          </div>
+          <button type="submit" class="btn btn-primary btn-lg w-100">{{ form.submit.label.text }}</button>
+      </form>
+      <div class="progress mt-4 d-none" id="uploadProgress">
+        <div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const uploadForm = document.getElementById('uploadForm');
+    const uploadProgress = document.getElementById('uploadProgress');
+    const progressBar = uploadProgress.querySelector('.progress-bar');
+
+    uploadForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(uploadForm);
+        uploadProgress.classList.remove('d-none');
+
+        fetch("{{ url_for('upload') }}", {
+            method: 'POST',
+            body: formData
+        }).then(response => {
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else {
+                return response.text();
+            }
+        }).then(data => {
+            // Handle errors or other responses
+        }).catch(error => {
+            console.error('Error:', error);
+        });
+
+        // Simulate progress (for demonstration)
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += 10;
+            progressBar.style.width = progress + '%';
+            progressBar.textContent = progress + '%';
+            if (progress >= 100) clearInterval(interval);
+        }, 300);
+    });
+  </script>
+{% endblock %}

@@ -1,0 +1,118 @@
+<!-- templates/index.html -->
+{% extends "layout.html" %}
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-4 fw-bold">Music Lessons</h1>
+            <p class="lead text-muted">Discover expert-led music lessons from professional instructors.</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        {% for video in videos %}
+        <div class="col-md-6 col-lg-4">
+            <div class="video-card h-100">
+                <div class="video-thumbnail-container">
+                    <video class="video-thumbnail" poster="{{ url_for('static', filename='thumbnails/default.jpg') }}">
+                        <source src="{{ url_for('uploaded_file', filename=video.filename) }}" type="video/mp4">
+                    </video>
+                    <div class="video-overlay">
+                        <span class="price-badge">${{ "%.2f"|format(video.price) }}</span>
+                    </div>
+                </div>
+                <div class="video-info">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title mb-0">{{ video.title }}</h5>
+                        {% if video.average_rating != 'No ratings yet' %}
+                        <div class="rating">
+                            <i class="fas fa-star"></i>
+                            <span>{{ video.average_rating }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <p class="text-muted mb-2">
+                        <img src="{{ url_for('static', filename='profile_pics/' + video.uploader.image_file) }}" 
+                             alt="{{ video.uploader.username }}" 
+                             class="instructor-img">
+                        {{ video.uploader.username }}
+                    </p>
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('video_detail', video_id=video.id) }}" 
+                           class="btn btn-primary">
+                            {% if current_user.is_authenticated and has_purchased(current_user.id, video.id) %}
+                            <i class="fas fa-play-circle"></i> Watch Now
+                            {% else %}
+                            <i class="fas fa-shopping-cart"></i> Purchase
+                            {% endif %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+.video-thumbnail-container {
+    position: relative;
+    aspect-ratio: 16/9;
+    overflow: hidden;
+}
+
+.video-thumbnail {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.video-overlay {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+}
+
+.price-badge {
+    background: rgba(0, 122, 255, 0.9);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    backdrop-filter: blur(4px);
+}
+
+.instructor-img {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+    object-fit: cover;
+}
+
+.rating {
+    background: var(--background-color);
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.rating i {
+    color: #FFD700;
+    margin-right: 0.25rem;
+}
+
+.display-4 {
+    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.lead {
+    font-size: 1.1rem;
+}
+</style>
+{% endblock content %}
