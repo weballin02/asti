@@ -268,30 +268,35 @@ class JazzWoodwindsLessons:
             st.session_state['active_booking_id'] = offering[0]
 
     def render_booking_form(self, offering):
-        st.markdown(f"### Book Lesson: {offering[1]}")
-        with st.form(key=f"booking_form_{offering[0]}", clear_on_submit=True):
-            student_name = st.text_input("Student Name")
-            student_email = st.text_input("Student Email")
-            preferred_day = st.selectbox("Preferred Day", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"])
-            preferred_time = st.text_input("Preferred Time (e.g., 10:00 AM or 3:30 PM)")
-            musical_goals = st.text_area("What are your musical goals?")
-            submitted = st.form_submit_button("Submit Booking")
-        
-        if submitted:
-            if not student_name or not student_email or not musical_goals or not preferred_time:
-                st.error("All fields are required!")
-            elif not re.match(r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$', student_email):
-                st.error("Please enter a valid email address.")
-            else:
-                conn = sqlite3.connect('jazz_woodwinds.db')
-                c = conn.cursor()
-                c.execute("""
-                INSERT INTO lesson_bookings (lesson_id, student_name, student_email, preferred_day, preferred_time, musical_goals)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """, (offering[0], student_name, student_email, preferred_day, preferred_time, musical_goals))
-                conn.commit()
-                conn.close()
-                st.success(f"Thank you, {student_name}! Your booking for {offering[1]} has been submitted.")
+    st.markdown(f"### Book Lesson: {offering[1]}")
+    with st.form(key=f"booking_form_{offering[0]}", clear_on_submit=True):
+        student_name = st.text_input("Student Name")
+        student_email = st.text_input("Student Email")
+        preferred_day = st.selectbox(
+            "Preferred Day of the Week",
+            ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        )
+        preferred_time = st.text_input("Preferred Time (e.g., 10:00 AM or 3:30 PM)")
+        musical_goals = st.text_area("What are your musical goals?")
+        submitted = st.form_submit_button("Submit Booking")
+    
+    if submitted:
+        if not student_name or not student_email or not musical_goals or not preferred_time:
+            st.error("All fields are required!")
+        elif not re.match(r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$', student_email):
+            st.error("Please enter a valid email address.")
+        else:
+            conn = sqlite3.connect('jazz_woodwinds.db')
+            c = conn.cursor()
+            c.execute("""
+            INSERT INTO lesson_bookings (lesson_id, student_name, student_email, preferred_day, preferred_time, musical_goals)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """, (offering[0], student_name, student_email, preferred_day, preferred_time, musical_goals))
+            conn.commit()
+            conn.close()
+            st.success(f"Thank you, {student_name}! Your booking for {offering[1]} has been submitted.")
+            st.session_state['active_booking_id'] = None
+
                 st.session_state['active_booking_id'] = None
 
     def authenticate_admin(self):
