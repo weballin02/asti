@@ -215,166 +215,31 @@ class JazzWoodwindsLessons:
         with st.form(key=f"booking_form_{offering[0]}", clear_on_submit=True):
             student_name = st.text_input("Student Name")
             student_email = st.text_input("Student Email")
-            preferred_day = st.text_input("Preferred Day (e.g., Monday, Tuesday, etc.)")
-            preferred_time = st.text_input("Preferred Time (e.g., 10:00 AM, 3:30 PM, etc.)")
+            
+            # Dropdown for Preferred Day
+            preferred_day = st.selectbox(
+                "Preferred Day",
+                ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+            )
+            
+            # Dropdown for Preferred Time
+            preferred_time = st.selectbox(
+                "Preferred Time",
+                ["8:00 AM", "9:00 AM", "10:00 AM", "11:00 AM", "12:00 PM", 
+                 "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM", "6:00 PM"]
+            )
+            
             musical_goals = st.text_area("What are your musical goals?")
             submitted = st.form_submit_button("Submit Booking")
 
             if submitted:
-                if not student_name or not student_email or not preferred_day or not preferred_time or not musical_goals:
+                if not student_name or not student_email or not musical_goals:
                     st.error("All fields are required!")
                 elif not re.match(r'^\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', student_email):
                     st.error("Please enter a valid email address.")
                 else:
                     st.success(f"Thank you, {student_name}! Your booking for {offering[1]} has been submitted.")
                     st.session_state['active_booking_id'] = None
-
-    def authenticate_admin(self):
-        if 'authenticated' not in st.session_state:
-            st.session_state['authenticated'] = False
-
-        if not st.session_state['authenticated']:
-            st.sidebar.header("Admin Login")
-            password = st.sidebar.text_input("Enter Password", type="password")
-            if st.sidebar.button("Login"):
-                if password == self.get_admin_password():
-                    st.session_state['authenticated'] = True
-                    st.sidebar.success("Logged in successfully!")
-                else:
-                    st.sidebar.error("Incorrect password.")
-        return st.session_state['authenticated']
-
-    def get_admin_password(self):
-        return "your_secure_password"
-
-    def render_admin_panel(self):
-        """Render the admin panel interface"""
-        if not self.authenticate_admin():
-            return
-
-        st.title("Admin Dashboard")
-        st.markdown("---")
-        
-        tab1, tab2 = st.tabs(["📚 Lesson Offerings", "📋 Bookings"])
-        
-        with tab1:
-            st.header("Manage Lesson Offerings")
-            
-            # Add New Offering Section
-            with st.expander("➕ Add New Lesson Type", expanded=True):
-                with st.form("new_offering_form"):
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        name = st.text_input("Lesson Name", placeholder="e.g., Beginner Saxophone")
-                        price = st.text_input("Price", placeholder="e.g., $50/hour")
-                    with col2:
-                        description = st.text_area("Description", 
-                            placeholder="Describe what students will learn in this lesson...",
-                            height=100)
-                        image_file = st.file_uploader("Upload Image (Optional)", 
-                            type=['png', 'jpg', 'jpeg'],
-                            help="Choose a photo that represents this lesson type")
-                    
-                    submitted = st.form_submit_button("Add New Lesson Type", use_container_width=True)
-                    if submitted:
-                        if not name or not description or not price:
-                            st.error("Please fill in all required fields!")
-                        else:
-                            try:
-                                image_path = None
-                                if image_file:
-                                    if not os.path.exists('images'):
-                                        os.makedirs('images')
-                                    image_filename = f"images/{uuid.uuid4()}.jpg"
-                                    with Image.open(image_file) as img:
-                                        # Convert to RGB if needed
-                                        if img.mode in ('RGBA', 'P'):
-                                            img = img.convert('RGB')
-                                        # Resize image to a standard size
-                                        img.thumbnail((800, 800))
-                                        img.save(image_filename, format='JPEG', quality=85, optimize=True)
-                                    image_path = image_filename
-                                
-                                conn = sqlite3.connect('jazz_woodwinds.db')
-                                c = conn.cursor()
-                                c.execute("""
-                                    INSERT INTO lesson_offerings (name, description, price, image_path)
-                                    VALUES (?, ?, ?, ?)
-                                """, (name, description, price, image_path))
-                                conn.commit()
-                                conn.close()
-                                
-                                st.success("✅ New lesson type added successfully!")
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"❌ Error adding lesson: {str(e)}")
-            
-            # View/Delete Offerings Section
-            st.markdown("---")
-            st.subheader("Current Lesson Types")
-            offerings = self.fetch_offerings()
-            if offerings:
-                for offering in offerings:
-                    with st.container():
-                        col1, col2, col3 = st.columns([2, 3, 1])
-                        with col1:
-                            if offering[4]:  # if there's an image
-                                try:
-                                    img = Image.open(offering[4])
-                                    st.image(img, width=200)
-                                except:
-                                    st.info("Image not available")
-                            else:
-                                st.info("No image uploaded")
-                        
-                        with col2:
-                            st.markdown(f"### {offering[1]}")
-                            st.markdown(f"**Price:** {offering[3]}")
-                            st.markdown(offering[2])
-                        
-                        with col3:
-                            if st.button("🗑️ Delete", key=f"del_{offering[0]}", 
-                                help="Remove this lesson type"):
-                                if st.warning(f"Are you sure you want to delete '{offering[1]}'?"):
-                                    conn = sqlite3.connect('jazz_woodwinds.db')
-                                    c = conn.cursor()
-                                    c.execute("DELETE FROM lesson_offerings WHERE id = ?", (offering[0],))
-                                    conn.commit()
-                                    conn.close()
-                                    st.success("Lesson deleted successfully!")
-                                    st.rerun()
-                        st.markdown("---")
-            else:
-                st.info("No lesson types available. Add your first lesson above!")
-        
-        with tab2:
-            st.header("Student Bookings")
-            bookings = self.fetch_bookings()
-            if bookings:
-                for booking in bookings:
-                    with st.expander(f"📅 {booking[2]} - {booking[1]}", expanded=True):
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            st.markdown(f"**Student:** {booking[2]}")
-                            st.markdown(f"**Email:** {booking[3]}")
-                            st.markdown(f"**Preferred Day:** {booking[4]}")
-                            st.markdown(f"**Preferred Time:** {booking[5]}")
-                        with col2:
-                            st.markdown("**Musical Goals:**")
-                            st.markdown(f"_{booking[6]}_")
-                        
-                        if st.button("🗑️ Delete Booking", key=f"del_booking_{booking[0]}"):
-                            if st.warning(f"Are you sure you want to delete this booking?"):
-                                conn = sqlite3.connect('jazz_woodwinds.db')
-                                c = conn.cursor()
-                                c.execute("DELETE FROM lesson_bookings WHERE id = ?", (booking[0],))
-                                conn.commit()
-                                conn.close()
-                                st.success("Booking deleted successfully!")
-                                st.rerun()
-                        st.markdown("---")
-            else:
-                st.info("No bookings received yet.")
 
     def main(self):
         st.sidebar.title("Navigation")
